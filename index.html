@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<!--
+  LES DÉFIS DE SHAMS — entraînement scolaire CM2
+  =================================================
+  COMMENT OUVRIR CE FICHIER :
+  Double-clique simplement sur "index.html" : il s'ouvre dans ton navigateur
+  habituel (Chrome, Safari, Firefox, Edge...). Aucune connexion internet
+  n'est nécessaire, aucune installation, rien n'est envoyé en ligne.
+  Tu peux aussi le copier sur une tablette ou un téléphone : ça fonctionne
+  pareil, en double-cliquant ou en l'ouvrant depuis l'application Fichiers.
+
+  COMMENT RÉINITIALISER LA PROGRESSION :
+  Va dans l'onglet "Réglages" (en haut de l'application), puis clique sur le
+  bouton rouge-orangé "Réinitialiser ma progression". Une confirmation te
+  sera demandée avant d'effacer les scores, séries et badges. Tu peux aussi
+  supprimer manuellement la clé "shamsProgress_v1" dans le localStorage du
+  navigateur si tu préfères le faire depuis les outils de développement.
+
+  Tout est stocké uniquement sur cet appareil (localStorage). Il n'y a ni
+  serveur, ni tracker, ni bibliothèque externe : un seul fichier autonome.
+-->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+<title>Les défis de Shams</title>
+<style>
+  :root{
+    --fs-body: 18px;
+    --fs-exercise: 23px;
+    --fs-title: 26px;
+    --radius: 18px;
+    --bg: #f4f7ff;
+    --bg-warm: #fff8ef;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --ink-soft: #4a5169;
+    --primary: #3d5cff;
+    --primary-dark: #2b41c9;
+    --accent: #ff9f43;
+    --good: #2fb380;
+    --good-bg: #e5f8ef;
+    --warn: #e08a1e;
+    --warn-bg: #fff2df;
+    --fragile: #e08a1e;
+    --presque: #3d5cff;
+    --acquis: #2fb380;
+    --nouveau: #8a90a6;
+    --shadow: 0 6px 18px rgba(40,50,90,0.10);
+    --focus: 3px solid #1749ff;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: var(--fs-body);
+    color: var(--ink);
+    background: linear-gradient(160deg, var(--bg) 0%, var(--bg-warm) 100%);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  #app{ max-width: 720px; margin: 0 auto; padding: 12px 16px 60px; }
+  button{ font-family: inherit; cursor: pointer; }
+  a{ color: var(--primary-dark); }
+  h1,h2,h3{ line-height:1.25; margin: 0 0 8px; }
+  .visually-hidden{
+    position:absolute; width:1px;height:1px; overflow:hidden;
+    clip:rect(0 0 0 0); white-space:nowrap;
+  }
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
+    outline: var(--focus); outline-offset: 2px;
+  }
+
+  /* --- Top nav --- */
+  .topnav{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px; padding: 14px 4px 10px; position:sticky; top:0;
+    background: linear-gradient(160deg, var(--bg) 0%, var(--bg-warm) 100%);
+    z-index: 10;
+  }
+  .brand{ font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px; }
+  .navbtns{ display:flex; gap:6px; }
+  .navbtns button{
+    border:none; background: rgba(61,92,255,0.08); color: var(--ink);
+    padding: 10px 12px; border-radius: 12px; font-size:15px; font-weight:600;
+    min-height:44px;
+  }
+  .navbtns button[aria-current="true"]{ background: var(--primary); color:#fff; }
+
+  /* --- Cards --- */
+  .card{
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px;
+  }
+  .hello{ font-size: 22px; font-weight:800; margin-bottom:4px; }
+  .hello-sub{ color: var(--ink-soft); font-size: 16px; }
+
+  .challenge-card{
+    background: linear-gradient(120deg, #eef2ff, #fff7e9);
+    border: 2px solid #dfe6ff;
+  }
+  .challenge-title{ font-size:14px; text-transform:uppercase; letter-spacing:.05em; color:var(--primary-dark); font-weight:800; margin-bottom:6px;}
+  .challenge-mod{ font-size:20px; font-weight:800; margin-bottom:10px; }
+
+  /* --- Module grid --- */
+  .grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr));
+    gap: 12px;
+  }
+  .mod-card{
+    background: var(--card); border-radius: 16px; box-shadow: var(--shadow);
+    padding: 14px; text-align:left; border: none; display:flex; flex-direction:column;
+    gap:8px; min-height: 128px;
+  }
+  .mod-emoji{ font-size: 30px; }
+  .mod-title{ font-weight:700; font-size:16px; }
+  .pastille{
+    display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
+    padding: 4px 10px; border-radius: 999px; width: fit-content;
+  }
+  .pastille.fragile{ background: var(--warn-bg); color: var(--fragile); }
+  .pastille.presque{ background: #e8ecff; color: var(--presque); }
+  .pastille.acquis{ background: var(--good-bg); color: var(--acquis); }
+  .pastille.nouveau{ background: #eceef4; color: var(--nouveau); }
+
+  /* --- Buttons --- */
+  .btn{
+    border:none; border-radius: 14px; padding: 14px 18px; font-weight:700;
+    font-size: 17px; min-height: 48px; min-width: 48px;
+  }
+  .btn-primary{ background: var(--primary); color:#fff; }
+  .btn-primary:hover{ background: var(--primary-dark); }
+  .btn-ghost{ background: #eef1fb; color: var(--ink); }
+  .btn-danger{ background: #fdeee3; color:#b5540e; }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .btn-block{ width:100%; }
+
+  /* --- Rule reminder --- */
+  .rule-box{
+    background: #eef2ff; border-radius: 14px; padding:16px; font-size: 18px;
+    color: var(--ink); margin: 12px 0 4px; border-left: 6px solid var(--primary);
+  }
+  .rule-example{
+    margin-top:10px; padding-top:10px; border-top:2px dashed #c7d0f0; font-size:17px;
+  }
+
+  /* --- Illustrations des solides --- */
+  .solid-fig{
+    display:flex; justify-content:center; margin: 4px 0 10px;
+  }
+  .solid-fig svg{ width: 150px; height: 128px; }
+
+  /* --- Opérations posées --- */
+  .posed-op{ display:flex; justify-content:center; margin: 4px 0 14px; }
+  .posed-mult{ font-family:"Courier New",monospace; font-size:28px; font-weight:800; text-align:right; color:var(--ink); }
+  .posed-mult .pline{ padding:2px 4px; }
+  .posed-mult .op-line{ border-top:3px solid var(--primary-dark); margin-top:2px; }
+  .posed-div{ display:flex; align-items:flex-start; gap:0; font-family:"Courier New",monospace; font-size:28px; font-weight:800; color:var(--ink); }
+  .posed-div .dividende{ padding:4px 10px 4px 4px; }
+  .posed-div .potence{ border-left:3px solid var(--primary-dark); padding-left:10px; }
+  .posed-div .diviseur{ border-bottom:3px solid var(--primary-dark); padding:4px 8px 6px 2px; display:inline-block; }
+
+  /* --- Quiz --- */
+  .progressbar-track{
+    height: 10px; background:#e7ebf7; border-radius:999px; overflow:hidden; margin-bottom:14px;
+  }
+  .progressbar-fill{ height:100%; background: var(--primary); transition: width .3s ease; }
+  .qcounter{ font-size:14px; color:var(--ink-soft); font-weight:700; margin-bottom:6px; }
+  .prompt{ font-size: var(--fs-exercise); font-weight:700; margin: 6px 0 14px; }
+  .sub-prompt{ font-size:16px; color:var(--ink-soft); margin-bottom:10px; }
+  .answer-input{
+    font-size: var(--fs-exercise); padding: 12px 14px; border-radius:12px;
+    border: 2px solid #ccd3ee; width: 100%; background:#fff; color:var(--ink);
+  }
+  .answer-input:focus{ border-color: var(--primary); }
+  .frame-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size: var(--fs-exercise); font-weight:700;}
+  .frame-row input.answer-input{ width: 110px; text-align:center; }
+  .two-inputs{ display:flex; gap:14px; flex-wrap:wrap; margin-top:6px; }
+  .two-inputs > div{ flex:1; min-width:140px; }
+  .two-inputs label{ display:block; font-size:15px; font-weight:700; margin-bottom:4px; color:var(--ink-soft);}
+  .choices{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  .choice-btn{
+    background:#eef1fb; border:2px solid transparent; border-radius:14px;
+    padding: 14px 18px; font-size:18px; font-weight:700; min-height:52px; flex:1; min-width:130px;
+  }
+  .choice-btn[aria-pressed="true"]{ border-color: var(--primary); background:#dde4ff; }
+  .rank-pool{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .rank-chip{
+    background:#eef1fb; border:2px solid transparent; border-radius:12px;
+    padding:10px 14px; font-size:18px; font-weight:700; min-height:48px;
+  }
+  .rank-chip[disabled]{ opacity:.35; }
+  .rank-selected{
+    display:flex; gap:8px; flex-wrap:wrap; margin: 10px 0; min-height:44px;
+    padding: 8px; border: 2px dashed #ccd3ee; border-radius:12px;
+  }
+  .rank-selected span{ background: var(--primary); color:#fff; padding:8px 12px; border-radius:10px; font-weight:700; }
+
+  .feedback{
+    margin-top:14px; padding:14px 16px; border-radius:14px; font-size:18px; font-weight:700;
+    display:none;
+  }
+  .feedback.show{ display:block; }
+  .feedback.ok{ background: var(--good-bg); color: #1d7a54; }
+  .feedback.retry{ background: var(--warn-bg); color: #9a5b0d; }
+  .feedback.reveal{ background:#eef1fb; color:var(--primary-dark); }
+  .tip{ font-size:15px; margin-top:6px; color:var(--ink-soft); font-weight:500; }
+  .euler-btn{ margin-top:10px; background:#fff; border:2px solid var(--primary); color:var(--primary-dark); border-radius:12px; padding:8px 12px; font-weight:700; font-size:14px; }
+  .euler-info{ margin-top:8px; font-size:15px; background:#fff; border-radius:10px; padding:10px; }
+
+  /* --- Result screen --- */
+  .result-score{ font-size:44px; font-weight:800; text-align:center; margin: 6px 0; color:var(--primary-dark); }
+  .result-stars{ text-align:center; font-size:30px; margin-bottom:8px; }
+  .result-line{ text-align:center; color:var(--ink-soft); font-size:16px; }
+  .badge-banner{
+    background: linear-gradient(120deg,#fff2df,#ffe8f0); border-radius:14px; padding:14px;
+    text-align:center; font-weight:700; margin-top:14px; color:#8a4b12;
+  }
+
+  /* --- Progress table --- */
+  table.suivi{ width:100%; border-collapse: collapse; }
+  table.suivi td, table.suivi th{ padding:10px 6px; text-align:left; font-size:15px; }
+  table.suivi th{ color: var(--ink-soft); font-size:13px; text-transform:uppercase; letter-spacing:.04em; border-bottom:2px solid #e7ebf7; }
+  table.suivi tr + tr td{ border-top: 1px solid #eef0f8; }
+  .mini-bar-track{ background:#e7ebf7; border-radius:999px; height:8px; width:100%; overflow:hidden; }
+  .mini-bar-fill{ height:100%; background: var(--primary); }
+  .streak-banner{
+    text-align:center; font-size:20px; font-weight:800; background:#fff2df; color:#8a4b12;
+    border-radius:14px; padding:14px; margin-bottom:16px;
+  }
+
+  /* --- Settings --- */
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; }
+  .switch{ position:relative; width:56px; height:32px; }
+  .switch input{ opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
+  .switch .track{
+    position:absolute; inset:0; background:#ccd3ee; border-radius:999px; transition:.2s; pointer-events:none;
+  }
+  .switch .thumb{
+    position:absolute; top:3px; left:3px; width:26px; height:26px; background:#fff; border-radius:50%;
+    transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); pointer-events:none;
+  }
+  .switch input:checked + .track{ background: var(--good); }
+  .switch input:checked + .track + .thumb{ transform: translateX(24px); }
+  .switch input:focus-visible + .track{ outline: var(--focus); outline-offset:2px; }
+
+  /* --- Confetti --- */
+  #confetti-layer{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:999; }
+  .confetti-piece{
+    position:absolute; top:-12px; width:10px; height:14px; border-radius:2px; opacity:.9;
+    animation-name: confettiFall; animation-timing-function: ease-in; animation-fill-mode:forwards;
+  }
+  @keyframes confettiFall{
+    to{ transform: translateY(105vh) rotate(340deg); opacity:0.6; }
+  }
+
+  @media (max-width:420px){
+    :root{ --fs-exercise: 21px; }
+    .grid{ grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); }
+  }
+</style>
+</head>
+<body>
+<div id="confetti-layer" aria-hidden="true"></div>
+<div id="app" role="main"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   DONNÉES — contenu validé uniquement (voir consigne projet)
+   ========================================================= */
+
+var MODULES = [
+  { id:"m1", emoji:"⏳", title:"Passé simple : les terminaisons",
+    ruleTitle:"La machine à voyager dans le temps",
+    ruleHtml:"Verbes en <b>-ER</b> : -ai, -as, -a, -âmes, -âtes, -èrent.<br>Verbes comme <b>finir</b> : -is, -is, -it, -îmes, -îtes, -irent.<br>Astuce : le petit chapeau (^) ne se pose que sur <b>nous</b> et <b>vous</b> !"+
+      '<div class="rule-example">💡 Exemple : <b>je regarde</b> → <b style="color:var(--good)">je regardai</b> (présent → passé simple, on ajoute -ai)</div>' },
+  { id:"m2", emoji:"⚔️", title:"Passé simple : verbes qui résistent",
+    ruleTitle:"La bataille de cartes",
+    ruleHtml:"Certains verbes n'obéissent pas aux règles classiques : apprends-les comme des cartes à collectionner !<br>Tu écriras la forme avec <b>il</b>, puis avec <b>ils</b>."+
+      '<div class="rule-example">💡 Exemple : <b>venir</b> → <b style="color:var(--good)">il vint</b> / <b style="color:var(--good)">ils vinrent</b></div>' },
+  { id:"m3", emoji:"🏠", title:"Encadrer un décimal",
+    ruleTitle:"Les deux maisons",
+    ruleHtml:"Un nombre décimal habite toujours entre deux nombres entiers, comme une maison entre deux voisins.<br>La partie après la virgule ne compte pas pour trouver les voisins !"+
+      '<div class="rule-example">💡 Exemple : <b>6,9</b> habite entre <b style="color:var(--good)">6</b> et <b style="color:var(--good)">7</b> → 6 &lt; 6,9 &lt; 7</div>' },
+  { id:"m4", emoji:"👻", title:"Comparer des décimaux",
+    ruleTitle:"Le zéro fantôme",
+    ruleHtml:"Compare d'abord les entiers, puis les dixièmes, puis les centièmes.<br>Ajouter un zéro après la virgule ne change rien : <b>7,7 = 7,70</b> !"+
+      '<div class="rule-example">💡 Exemple : <b>5,78</b> <span style="color:var(--good);font-weight:800;">&lt;</span> <b>5,87</b> car les dixièmes 7 &lt; 8</div>' },
+  { id:"m5", emoji:"🌳", title:"Aire et périmètre",
+    ruleTitle:"La clôture et le gazon",
+    ruleHtml:"Le <b>périmètre</b>, c'est le tour du jardin (la clôture) : unité simple (cm, m...).<br>L'<b>aire</b>, c'est la surface (le gazon) : unité <b>au carré</b> (cm², m²...)."+
+      '<div class="rule-example">💡 Exemple : carré de 9 hm de côté → Périmètre = <b style="color:var(--primary-dark)">36 hm</b>, Aire = <b style="color:var(--good)">81 hm²</b></div>' },
+  { id:"m6", emoji:"🧩", title:"Phrase simple ou complexe",
+    ruleTitle:"Compter les verbes conjugués",
+    ruleHtml:"1 verbe conjugué = phrase <b>simple</b>. 2 verbes ou + = <b>complexe</b>.<br>Reliés par et/ou/mais/car/donc → <b>coordonnée</b>. Séparés par une virgule → <b>juxtaposée</b>."+
+      '<div class="rule-example">💡 Exemple : « Il pleut, les enfants rentrent. » → 2 verbes, virgule → <b style="color:var(--good)">complexe, juxtaposée</b></div>' },
+  { id:"m7", emoji:"🎲", title:"Les solides",
+    ruleTitle:"Est-ce que ça roule ?",
+    ruleHtml:"Un <b>polyèdre</b> n'a que des faces plates : il ne roule pas.<br>S'il a une face courbe (comme une boule) : ce n'est <b>pas un polyèdre</b>, il peut rouler !"+
+      '<div class="rule-example">💡 Exemple : le pavé droit a 6 faces plates → il ne roule pas → <b style="color:var(--good)">polyèdre</b></div>' },
+  { id:"m8", emoji:"🔢", title:"Encadrer les grands nombres",
+    ruleTitle:"La dizaine de millions voisine",
+    ruleHtml:"Regarde le chiffre des <b>dizaines de millions</b> et trouve les deux dizaines de millions voisines qui encadrent le nombre."+
+      '<div class="rule-example">💡 Exemple : <b>123 654 897</b> → 120 000 000 &lt; ... &lt; <b style="color:var(--good)">130 000 000</b></div>' },
+  { id:"m9", emoji:"🦋", title:"Axes de symétrie",
+    ruleTitle:"Le pliage parfait",
+    ruleHtml:"Un axe de symétrie, c'est une ligne qui coupe une figure en deux parties identiques : si on plie dessus, elles se superposent parfaitement !<br>Certaines figures en ont plusieurs, d'autres aucune."+
+      '<div class="rule-example">💡 Exemple : un <b>carré</b> a <b style="color:var(--good)">4</b> axes de symétrie, un <b>cercle</b> en a une infinité !</div>' },
+  { id:"m10", emoji:"📏", title:"Conversions d'unités",
+    ruleTitle:"Grande unité, petite unité",
+    ruleHtml:"1 km = 1000 m, 1 m = 100 cm. 1 kg = 1000 g. 1 L = 1000 mL.<br>Pour passer d'une grande unité à une petite, on <b>multiplie</b>. Pour passer d'une petite à une grande, on <b>divise</b> !"+
+      '<div class="rule-example">💡 Exemple : 3 km = 3 <span style="color:var(--good);font-weight:800;">×</span> 1000 = <b style="color:var(--good)">3000</b> m</div>' },
+  { id:"m11", emoji:"🍕", title:"Fraction d'une quantité",
+    ruleTitle:"Partager en parts égales",
+    ruleHtml:"Pour prendre une fraction d'une quantité, on partage d'abord en parts égales (le dénominateur), puis on garde le bon nombre de parts (le numérateur)."+
+      '<div class="rule-example">💡 Exemple : 1/4 de 12, c\'est 12 ÷ 4 = <b style="color:var(--good)">3</b></div>' },
+  { id:"m12", emoji:"👑", title:"Henri IV et les guerres de Religion",
+    ruleTitle:"Un roi qui met fin aux guerres",
+    ruleHtml:"Henri IV, roi de Navarre devenu roi de France, met fin aux guerres de Religion entre catholiques et protestants en signant l'édit de Nantes, qui autorise la liberté de culte."+
+      '<div class="rule-example">💡 Exemple : en <b style="color:var(--good)">1598</b>, Henri IV signe l\'<b>édit de Nantes</b></div>' },
+  { id:"m13", emoji:"✖️", title:"Poser une multiplication ou division",
+    ruleTitle:"Les nombres l'un sous l'autre",
+    ruleHtml:"Pour <b>poser</b> une opération, on écrit les nombres l'un sous l'autre (multiplication) ou dans une potence (division), et on calcule étape par étape.<br>Niveau 1 : nombres entiers. Niveau 2 : nombres décimaux, attention à la virgule !"+
+      '<div class="rule-example">💡 Exemple : <b>4,5 × 3</b> = <b style="color:var(--good)">13,5</b> (comme 45 × 3 = 135, puis on replace la virgule)</div>' },
+  { id:"m14", emoji:"🧮", title:"Tables difficiles (6, 7, 8, 9)",
+    ruleTitle:"Les tables qui résistent",
+    ruleHtml:"Les tables de 6, 7, 8 et 9 sont souvent les plus difficiles à retenir : il faut les répéter souvent !"+
+      '<div class="rule-example">💡 Astuce : <b>7 × 8</b> = <b style="color:var(--good)">56</b>, comme la suite 5-6-7-8 !</div>' }
+];
+
+function shuffle(arr){
+  var a = arr.slice();
+  for(var i=a.length-1;i>0;i--){
+    var j = Math.floor(Math.random()*(i+1));
+    var t=a[i]; a[i]=a[j]; a[j]=t;
+  }
+  return a;
+}
+
+/* ---- Module 1 : terminaisons passé simple ---- */
+function buildM1(){
+  var items = [
+    {p:"je regarde", a:"je regardai"},
+    {p:"nous regardons", a:"nous regardâmes"},
+    {p:"vous remplissez", a:"vous remplîtes"},
+    {p:"ils finissent", a:"ils finirent"},
+    {p:"je voyage", a:"je voyageai"},
+    {p:"il place", a:"il plaça"},
+    {p:"nous faisons", a:"nous fîmes"},
+    {p:"il va", a:"il alla"},
+    {p:"ils vont", a:"ils allèrent"},
+    {p:"je joue", a:"je jouai"},
+    {p:"nous jouons", a:"nous jouâmes"},
+    {p:"vous choisissez", a:"vous choisîtes"},
+    {p:"ils grandissent", a:"ils grandirent"},
+    {p:"je pense", a:"je pensai"},
+    {p:"il chante", a:"il chanta"},
+    {p:"nous dansons", a:"nous dansâmes"},
+    {p:"vous saisissez", a:"vous saisîtes"}
+  ];
+  var pick = shuffle(items).slice(0,8);
+  return pick.map(function(it){
+    return {
+      kind:"text",
+      prompt: it.p,
+      instruction:"Écris ce verbe au passé simple :",
+      answer: it.a,
+      accentTip: /[âî]/.test(it.a) ? "Pense au petit chapeau (^) : il n'apparaît que sur nous et vous !" : null
+    };
+  });
+}
+
+/* ---- Module 2 : verbes irréguliers ---- */
+function buildM2(){
+  var items = [
+    {inf:"venir", s:"il vint", p:"ils vinrent"},
+    {inf:"tenir", s:"il tint", p:"ils tinrent"},
+    {inf:"prendre", s:"il prit", p:"ils prirent"},
+    {inf:"faire", s:"il fit", p:"ils firent"},
+    {inf:"voir", s:"il vit", p:"ils virent"},
+    {inf:"pouvoir", s:"il put", p:"ils purent"},
+    {inf:"vouloir", s:"il voulut", p:"ils voulurent"},
+    {inf:"dire", s:"il dit", p:"ils dirent"},
+    {inf:"être", s:"il fut", p:"ils furent"},
+    {inf:"avoir", s:"il eut", p:"ils eurent"},
+    {inf:"savoir", s:"il sut", p:"ils surent"},
+    {inf:"devoir", s:"il dut", p:"ils durent"},
+    {inf:"mettre", s:"il mit", p:"ils mirent"},
+    {inf:"écrire", s:"il écrivit", p:"ils écrivirent"},
+    {inf:"vivre", s:"il vécut", p:"ils vécurent"},
+    {inf:"connaître", s:"il connut", p:"ils connurent"},
+    {inf:"boire", s:"il but", p:"ils burent"},
+    {inf:"croire", s:"il crut", p:"ils crurent"}
+  ];
+  var pick = shuffle(items).slice(0,8);
+  return pick.map(function(it){
+    return {
+      kind:"text2",
+      prompt: it.inf,
+      instruction:"Conjugue ce verbe au passé simple :",
+      labels:["il / elle", "ils / elles"],
+      answer:[it.s.replace(/^il /,""), it.p.replace(/^ils /,"")]
+    };
+  });
+}
+
+/* ---- Module 3 : encadrement décimal à l'unité ---- */
+function buildM3(){
+  var items = [
+    {d:"3,12", low:3, up:4},
+    {d:"6,9", low:6, up:7},
+    {d:"40,765", low:40, up:41},
+    {d:"799,541", low:799, up:800},
+    {d:"12,45", low:12, up:13},
+    {d:"8,3", low:8, up:9},
+    {d:"156,08", low:156, up:157},
+    {d:"4,999", low:4, up:5}
+  ];
+  var pool = shuffle(items).slice(0,8);
+  return pool.map(function(it){
+    return {
+      kind:"frame2",
+      prompt: it.d,
+      instruction:"Encadre ce nombre à l'unité (nombre entier avant et après) :",
+      answer:[it.low, it.up]
+    };
+  });
+}
+
+/* ---- Module 4 : comparer et ranger ---- */
+function buildM4(){
+  var comps = [
+    {a:"5,78", op:"<", b:"5,87"},
+    {a:"3,290", op:"=", b:"3,29"},
+    {a:"27,09", op:"<", b:"27,9"},
+    {a:"32,23", op:">", b:"32,023"},
+    {a:"7,7", op:"=", b:"7,700"},
+    {a:"694,734", op:"<", b:"694,85"},
+    {a:"9,05", op:"<", b:"9,5"},
+    {a:"14,20", op:"=", b:"14,2"},
+    {a:"3,4", op:"<", b:"3,45"},
+    {a:"67,8", op:">", b:"67,08"}
+  ];
+  var qs = shuffle(comps).slice(0,7).map(function(c){
+    return {
+      kind:"choice",
+      prompt: c.a + "   ?   " + c.b,
+      instruction:"Choisis le bon signe :",
+      options:["<","=",">"],
+      answer: c.op
+    };
+  });
+  var rankSets = [
+    ["4,056","4,56","4,6","5,406","5,46"],
+    ["2,05","2,5","3,1","3,15","3,2"]
+  ];
+  var rankValues = shuffle(rankSets)[0];
+  qs.push({
+    kind:"rank",
+    prompt: "Clique les nombres dans l'ordre croissant (du plus petit au plus grand) :",
+    instruction:"",
+    options: shuffle(rankValues),
+    answer: rankValues
+  });
+  return shuffle(qs);
+}
+
+/* ---- Module 5 : aire et périmètre ---- */
+function gridSvg(cols, rows){
+  var cell = 26, margin = 6;
+  var w = cols*cell + margin*2, h = rows*cell + margin*2;
+  var s = '<svg viewBox="0 0 '+w+' '+h+'">';
+  s += '<rect x="'+margin+'" y="'+margin+'" width="'+(cols*cell)+'" height="'+(rows*cell)+'" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/>';
+  for(var i=1;i<cols;i++){
+    var x = margin+i*cell;
+    s += '<line x1="'+x+'" y1="'+margin+'" x2="'+x+'" y2="'+(margin+rows*cell)+'" style="stroke:#2b41c9;stroke-width:1.5"/>';
+  }
+  for(var j=1;j<rows;j++){
+    var y = margin+j*cell;
+    s += '<line x1="'+margin+'" y1="'+y+'" x2="'+(margin+cols*cell)+'" y2="'+y+'" style="stroke:#2b41c9;stroke-width:1.5"/>';
+  }
+  s += '</svg>';
+  return s;
+}
+
+function countCells(matrix){
+  var n = 0;
+  matrix.forEach(function(row){ row.forEach(function(v){ if(v) n++; }); });
+  return n;
+}
+
+function shapeGridSvg(matrix){
+  var cell = 26, margin = 6;
+  var rows = matrix.length, cols = matrix[0].length;
+  var w = cols*cell + margin*2, h = rows*cell + margin*2;
+  var s = '<svg viewBox="0 0 '+w+' '+h+'">';
+  for(var r=0;r<rows;r++){
+    for(var c=0;c<cols;c++){
+      if(matrix[r][c]){
+        var x = margin+c*cell, y = margin+r*cell;
+        s += '<rect x="'+x+'" y="'+y+'" width="'+cell+'" height="'+cell+'" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:1.5"/>';
+      }
+    }
+  }
+  s += '</svg>';
+  return s;
+}
+
+function buildM5(){
+  var L1 = [[1,1,1],[1,0,0],[1,0,0]];
+  var L2 = [[1,1,0,0],[1,1,0,0],[1,1,1,1]];
+  var L3 = [[1,1,1],[0,1,0],[0,1,0]];
+  var pool = [
+    { kind:"calc", prompt:"Un carré a un côté de 9 hm. Quelle est son AIRE ?", instruction:"Écris le résultat avec son unité (ex : 81 hm2)", answer:"81hm2" },
+    { kind:"calc", prompt:"Un rectangle mesure 12 mm sur 5 mm. Quelle est son AIRE ?", instruction:"Écris le résultat avec son unité (ex : 60 mm2)", answer:"60mm2" },
+    { kind:"calc", prompt:"Ce même carré (côté 9 hm) : quel est son PÉRIMÈTRE ?", instruction:"Écris le résultat avec son unité (ex : 36 hm)", answer:"36hm" },
+    { kind:"calc", prompt:"Ce même rectangle (12 mm x 5 mm) : quel est son PÉRIMÈTRE ?", instruction:"Écris le résultat avec son unité (ex : 34 mm)", answer:"34mm" },
+    { kind:"calc", prompt:"Un carré a un côté de 7 cm. Quelle est son AIRE ?", instruction:"Écris le résultat avec son unité (ex : 49 cm2)", answer:"49cm2" },
+    { kind:"calc", prompt:"Ce même carré (côté 7 cm) : quel est son PÉRIMÈTRE ?", instruction:"Écris le résultat avec son unité (ex : 28 cm)", answer:"28cm" },
+    { kind:"calc", prompt:"Un rectangle mesure 8 m sur 3 m. Quelle est son AIRE ?", instruction:"Écris le résultat avec son unité (ex : 24 m2)", answer:"24m2" },
+    { kind:"calc", prompt:"Ce même rectangle (8 m x 3 m) : quel est son PÉRIMÈTRE ?", instruction:"Écris le résultat avec son unité (ex : 22 m)", answer:"22m" },
+    { kind:"choice", prompt:"Le tour d'un jardin (la clôture), comment on l'appelle ?", instruction:"", options:["Le périmètre","L'aire"], answer:"Le périmètre" },
+    { kind:"choice", prompt:"La surface d'un jardin (le gazon), comment on l'appelle ?", instruction:"", options:["Le périmètre","L'aire"], answer:"L'aire" },
+    { kind:"choice", prompt:"Quelle unité utilise-t-on toujours pour une AIRE ?", instruction:"", options:["Une unité simple (cm, m...)","Une unité au carré (cm², m²...)"], answer:"Une unité au carré (cm², m²...)" },
+    { kind:"choice", prompt:"Dans quelle unité donne-t-on toujours un PÉRIMÈTRE ?", instruction:"", options:["Une unité simple (cm, m...)","Une unité au carré (cm², m²...)"], answer:"Une unité simple (cm, m...)" },
+    { kind:"calc", prompt:"Voici un quadrillage.", instruction:"Combien de carreaux (unités d'aire) recouvrent cette figure ?", answer:"12", shapeSvg: gridSvg(4,3) },
+    { kind:"calc", prompt:"Voici un autre quadrillage.", instruction:"Combien de carreaux (unités d'aire) recouvrent cette figure ?", answer:"10", shapeSvg: gridSvg(5,2) },
+    { kind:"calc", prompt:"Voici une figure sur quadrillage (elle n'est pas un rectangle entier).", instruction:"Combien de carreaux (unités d'aire) recouvrent cette figure ?", answer:String(countCells(L1)), shapeSvg: shapeGridSvg(L1) },
+    { kind:"calc", prompt:"Voici une autre figure sur quadrillage.", instruction:"Combien de carreaux (unités d'aire) recouvrent cette figure ?", answer:String(countCells(L2)), shapeSvg: shapeGridSvg(L2) },
+    { kind:"calc", prompt:"Voici une figure en forme de T sur quadrillage.", instruction:"Combien de carreaux (unités d'aire) recouvrent cette figure ?", answer:String(countCells(L3)), shapeSvg: shapeGridSvg(L3) }
+  ];
+  return shuffle(pool).slice(0,10);
+}
+
+/* ---- Module 6 : phrase simple / complexe ---- */
+function buildM6(){
+  var qs = [
+    { kind:"choice", prompt:"« Comme tous les soirs de la semaine, je m'endors à 21h. »", instruction:"Simple ou complexe ?", options:["Simple","Complexe"], answer:"Simple" },
+    { kind:"choice", prompt:"« Le chien dort. »", instruction:"Simple ou complexe ?", options:["Simple","Complexe"], answer:"Simple" },
+    { kind:"choice", prompt:"« Je mange car j'ai faim ! »", instruction:"Simple ou complexe ?", options:["Simple","Complexe"], answer:"Complexe" },
+    { kind:"choice", prompt:"« Je mange car j'ai faim ! »", instruction:"Cette phrase complexe est...", options:["Coordonnée","Juxtaposée"], answer:"Coordonnée" },
+    { kind:"choice", prompt:"« Il pleut, les enfants rentrent. »", instruction:"Simple ou complexe ?", options:["Simple","Complexe"], answer:"Complexe" },
+    { kind:"choice", prompt:"« Il pleut, les enfants rentrent. »", instruction:"Cette phrase complexe est...", options:["Coordonnée","Juxtaposée"], answer:"Juxtaposée" },
+    { kind:"choice", prompt:"« Le soleil brille. »", instruction:"Simple ou complexe ?", options:["Simple","Complexe"], answer:"Simple" },
+    { kind:"choice", prompt:"« Nous jouons dans le jardin. »", instruction:"Simple ou complexe ?", options:["Simple","Complexe"], answer:"Simple" },
+    { kind:"choice", prompt:"« Elle chante et elle danse. »", instruction:"Simple ou complexe ?", options:["Simple","Complexe"], answer:"Complexe" },
+    { kind:"choice", prompt:"« Elle chante et elle danse. »", instruction:"Cette phrase complexe est...", options:["Coordonnée","Juxtaposée"], answer:"Coordonnée" },
+    { kind:"choice", prompt:"« Le vent souffle, les feuilles tombent. »", instruction:"Simple ou complexe ?", options:["Simple","Complexe"], answer:"Complexe" },
+    { kind:"choice", prompt:"« Le vent souffle, les feuilles tombent. »", instruction:"Cette phrase complexe est...", options:["Coordonnée","Juxtaposée"], answer:"Juxtaposée" }
+  ];
+  return shuffle(qs).slice(0,8);
+}
+
+/* ---- Module 7 : solides (illustrations SVG) ---- */
+var SHAPE_SVG = {
+  pave: '<svg viewBox="0 0 140 120"><polygon points="45,20 110,20 110,70 45,70" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><line x1="20" y1="40" x2="45" y2="20" style="stroke:#2b41c9;stroke-width:3"/><line x1="85" y1="40" x2="110" y2="20" style="stroke:#2b41c9;stroke-width:3"/><line x1="85" y1="90" x2="110" y2="70" style="stroke:#2b41c9;stroke-width:3"/><line x1="20" y1="90" x2="45" y2="70" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><polygon points="20,40 85,40 85,90 20,90" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  cube: '<svg viewBox="0 0 140 120"><polygon points="50,20 100,20 100,70 50,70" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><line x1="25" y1="45" x2="50" y2="20" style="stroke:#2b41c9;stroke-width:3"/><line x1="75" y1="45" x2="100" y2="20" style="stroke:#2b41c9;stroke-width:3"/><line x1="75" y1="95" x2="100" y2="70" style="stroke:#2b41c9;stroke-width:3"/><line x1="25" y1="95" x2="50" y2="70" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><polygon points="25,45 75,45 75,95 25,95" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  pyramide: '<svg viewBox="0 0 140 120"><polygon points="20,85 70,100 120,85 70,70" style="fill:#eef2ff;stroke:none"/><line x1="120" y1="85" x2="70" y2="70" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="70" y1="70" x2="20" y2="85" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="20" y1="85" x2="70" y2="100" style="stroke:#2b41c9;stroke-width:3"/><line x1="70" y1="100" x2="120" y2="85" style="stroke:#2b41c9;stroke-width:3"/><line x1="70" y1="20" x2="70" y2="70" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="70" y1="20" x2="20" y2="85" style="stroke:#2b41c9;stroke-width:3"/><line x1="70" y1="20" x2="70" y2="100" style="stroke:#2b41c9;stroke-width:3"/><line x1="70" y1="20" x2="120" y2="85" style="stroke:#2b41c9;stroke-width:3"/></svg>',
+  prisme_hex: '<svg viewBox="0 0 140 120"><polygon points="45,40 60,20 95,20 110,40 95,60 60,60" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><line x1="15" y1="70" x2="45" y2="40" style="stroke:#2b41c9;stroke-width:3"/><line x1="30" y1="50" x2="60" y2="20" style="stroke:#2b41c9;stroke-width:3"/><line x1="65" y1="50" x2="95" y2="20" style="stroke:#2b41c9;stroke-width:3"/><line x1="80" y1="70" x2="110" y2="40" style="stroke:#2b41c9;stroke-width:3"/><line x1="65" y1="90" x2="95" y2="60" style="stroke:#2b41c9;stroke-width:3"/><line x1="30" y1="90" x2="60" y2="60" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><polygon points="15,70 30,50 65,50 80,70 65,90 30,90" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  cone: '<svg viewBox="0 0 140 120"><line x1="70" y1="18" x2="32" y2="95" style="stroke:#2b41c9;stroke-width:3"/><line x1="70" y1="18" x2="108" y2="95" style="stroke:#2b41c9;stroke-width:3"/><ellipse cx="70" cy="95" rx="38" ry="14" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/></svg>',
+  sphere: '<svg viewBox="0 0 140 120"><circle cx="70" cy="63" r="45" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/><ellipse cx="70" cy="63" rx="45" ry="15" style="fill:none;stroke:#2b41c9;stroke-width:2;stroke-dasharray:5,4"/></svg>',
+  cylindre: '<svg viewBox="0 0 140 120"><ellipse cx="70" cy="30" rx="38" ry="13" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/><line x1="32" y1="30" x2="32" y2="93" style="stroke:#2b41c9;stroke-width:3"/><line x1="108" y1="30" x2="108" y2="93" style="stroke:#2b41c9;stroke-width:3"/><path d="M32,93 A38,13 0 0 0 108,93" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/></svg>',
+  prisme_tri: '<svg viewBox="0 0 140 120"><polygon points="75,15 60,65 105,65" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><line x1="30" y1="30" x2="75" y2="15" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="15" y1="80" x2="60" y2="65" style="stroke:#2b41c9;stroke-width:3"/><line x1="60" y1="80" x2="105" y2="65" style="stroke:#2b41c9;stroke-width:3"/><polygon points="30,30 15,80 60,80" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  pyramide_penta: '<svg viewBox="0 0 140 120"><polygon points="25,85 50,100 95,100 115,82 70,68" style="fill:#eef2ff;stroke:none"/><line x1="115" y1="82" x2="70" y2="68" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="70" y1="68" x2="25" y2="85" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="25" y1="85" x2="50" y2="100" style="stroke:#2b41c9;stroke-width:3"/><line x1="50" y1="100" x2="95" y2="100" style="stroke:#2b41c9;stroke-width:3"/><line x1="95" y1="100" x2="115" y2="82" style="stroke:#2b41c9;stroke-width:3"/><line x1="70" y1="15" x2="115" y2="82" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="70" y1="15" x2="70" y2="68" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="70" y1="15" x2="25" y2="85" style="stroke:#2b41c9;stroke-width:3"/><line x1="70" y1="15" x2="50" y2="100" style="stroke:#2b41c9;stroke-width:3"/><line x1="70" y1="15" x2="95" y2="100" style="stroke:#2b41c9;stroke-width:3"/></svg>',
+  tronc: '<svg viewBox="0 0 140 120"><polygon points="55,35 105,35 120,75 40,75" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><line x1="35" y1="50" x2="55" y2="35" style="stroke:#2b41c9;stroke-width:3"/><line x1="85" y1="50" x2="105" y2="35" style="stroke:#2b41c9;stroke-width:3"/><line x1="100" y1="90" x2="120" y2="75" style="stroke:#2b41c9;stroke-width:3"/><line x1="20" y1="90" x2="40" y2="75" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><polygon points="35,50 85,50 100,90 20,90" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  tetra: '<svg viewBox="0 0 140 120"><polygon points="20,90 100,90 60,70" style="fill:#eef2ff;stroke:none"/><line x1="100" y1="90" x2="60" y2="70" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="60" y1="70" x2="20" y2="90" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="20" y1="90" x2="100" y2="90" style="stroke:#2b41c9;stroke-width:3"/><line x1="60" y1="15" x2="60" y2="70" style="stroke:#2b41c9;stroke-width:3;stroke-dasharray:5,4"/><line x1="60" y1="15" x2="20" y2="90" style="stroke:#2b41c9;stroke-width:3"/><line x1="60" y1="15" x2="100" y2="90" style="stroke:#2b41c9;stroke-width:3"/></svg>'
+};
+
+var NET_SVG = {
+  pyramide: '<svg viewBox="0 0 140 140"><polygon points="45,45 95,45 70,10" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><polygon points="45,95 95,95 70,130" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><polygon points="45,45 45,95 10,70" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><polygon points="95,45 95,95 130,70" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><rect x="45" y="45" width="50" height="50" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/></svg>',
+  prisme: '<svg viewBox="0 0 140 160"><rect x="10" y="50" width="40" height="60" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/><rect x="50" y="50" width="40" height="60" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/><rect x="90" y="50" width="40" height="60" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/><polygon points="10,50 50,50 30,15" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/><polygon points="10,110 50,110 30,145" style="fill:#dde4ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>'
+};
+
+function buildM7(){
+  var classify = [
+    {name:"un pavé droit", a:"Polyèdre", shape:"pave"},
+    {name:"un cube", a:"Polyèdre", shape:"cube"},
+    {name:"une pyramide", a:"Polyèdre", shape:"pyramide"},
+    {name:"un prisme hexagonal", a:"Polyèdre", shape:"prisme_hex"},
+    {name:"un cône", a:"Non-polyèdre", shape:"cone"},
+    {name:"une sphère (une boule)", a:"Non-polyèdre", shape:"sphere"},
+    {name:"un cylindre", a:"Non-polyèdre", shape:"cylindre"},
+    {name:"une pyramide à base triangulaire", a:"Polyèdre", shape:"tetra"}
+  ];
+  var qs = classify.map(function(c){
+    return { kind:"choice", prompt:"Regarde bien ce solide.", instruction:"Est-ce que ça roule ? (polyèdre ou non-polyèdre)", options:["Polyèdre","Non-polyèdre"], answer:c.a, shapeSvg: SHAPE_SVG[c.shape], name:c.name };
+  });
+  qs.push({ kind:"calc", prompt:"Combien de SOMMETS a un pavé droit ?", instruction:"Écris juste le nombre", answer:"8", shapeSvg: SHAPE_SVG.pave, solid:{faces:6,sommets:8,aretes:12,name:"le pavé droit"} });
+  qs.push({ kind:"calc", prompt:"Combien de FACES a une pyramide à base pentagonale ?", instruction:"Écris juste le nombre", answer:"6", shapeSvg: SHAPE_SVG.pyramide_penta, solid:{faces:6,sommets:6,aretes:10,name:"la pyramide à base pentagonale"} });
+  qs.push({ kind:"calc", prompt:"Combien d'ARÊTES a un prisme triangulaire ?", instruction:"Écris juste le nombre", answer:"9", shapeSvg: SHAPE_SVG.prisme_tri, solid:{faces:5,sommets:6,aretes:9,name:"le prisme triangulaire"} });
+  qs.push({ kind:"calc", prompt:"Combien de SOMMETS a ce solide ?", instruction:"Écris juste le nombre", answer:"8", shapeSvg: SHAPE_SVG.tronc, solid:{faces:6,sommets:8,aretes:12,name:"ce solide"} });
+  qs.push({ kind:"choice", prompt:"Voici un patron (une figure à plat qu'on peut plier).", instruction:"Quel solide peut-on construire avec ce patron ?", options:["Une pyramide","Un cube","Un cylindre"], answer:"Une pyramide", shapeSvg: NET_SVG.pyramide });
+  qs.push({ kind:"choice", prompt:"Voici un autre patron.", instruction:"Quel solide peut-on construire avec ce patron ?", options:["Un prisme droit","Une sphère","Un cône"], answer:"Un prisme droit", shapeSvg: NET_SVG.prisme });
+  qs.push({ kind:"calc", prompt:"Combien d'ARÊTES a une pyramide à base triangulaire ?", instruction:"Écris juste le nombre", answer:"6", shapeSvg: SHAPE_SVG.tetra, solid:{faces:4,sommets:4,aretes:6,name:"la pyramide à base triangulaire"} });
+  return shuffle(qs).slice(0,10);
+}
+
+/* ---- Module 8 : encadrer les grands nombres ---- */
+function buildM8(){
+  var items = [
+    {n:"123 654 897", low:120000000, up:130000000},
+    {n:"809 742 965", low:800000000, up:810000000},
+    {n:"497 651 098", low:490000000, up:500000000},
+    {n:"356 789 012", low:350000000, up:360000000},
+    {n:"45 123 456", low:40000000, up:50000000},
+    {n:"678 234 591", low:670000000, up:680000000}
+  ];
+  var pool = shuffle(items).slice(0,8);
+  return pool.map(function(it){
+    return { kind:"frame2", prompt: it.n, instruction:"Encadre ce nombre à la dizaine de millions :", answer:[it.low, it.up] };
+  });
+}
+
+/* ---- Module 9 : axes de symétrie (figures planes, illustrations SVG) ---- */
+var SYM_SVG = {
+  carre: '<svg viewBox="0 0 120 120"><rect x="20" y="20" width="80" height="80" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/></svg>',
+  rectangle: '<svg viewBox="0 0 120 120"><rect x="10" y="35" width="100" height="50" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/></svg>',
+  losange: '<svg viewBox="0 0 120 120"><polygon points="60,10 100,60 60,110 20,60" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  triangle_eq: '<svg viewBox="0 0 120 120"><polygon points="60,15 105,95 15,95" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  triangle_iso: '<svg viewBox="0 0 120 120"><polygon points="60,10 85,110 35,110" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  cercle: '<svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3"/></svg>',
+  pentagone: '<svg viewBox="0 0 120 120"><polygon points="60,10 107,45 89,100 31,100 12,45" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  hexagone: '<svg viewBox="0 0 120 120"><polygon points="110,60 85,103 35,103 10,60 35,17 85,17" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>',
+  triangle_scal: '<svg viewBox="0 0 120 120"><polygon points="20,100 95,108 70,15" style="fill:#eef2ff;stroke:#2b41c9;stroke-width:3;stroke-linejoin:round"/></svg>'
+};
+
+function buildM9(){
+  var items = [
+    {name:"un carré", shape:"carre", a:"4"},
+    {name:"un rectangle", shape:"rectangle", a:"2"},
+    {name:"un losange", shape:"losange", a:"2"},
+    {name:"un triangle équilatéral", shape:"triangle_eq", a:"3"},
+    {name:"un triangle isocèle", shape:"triangle_iso", a:"1"},
+    {name:"un cercle", shape:"cercle", a:"Une infinité"},
+    {name:"un pentagone régulier", shape:"pentagone", a:"5"},
+    {name:"un hexagone régulier", shape:"hexagone", a:"6"},
+    {name:"un triangle quelconque (scalène)", shape:"triangle_scal", a:"0"}
+  ];
+  var qs = items.map(function(it){
+    return { kind:"choice", prompt:"Regarde bien cette figure.", instruction:"Combien d'axes de symétrie a-t-elle ?", options:["0","1","2","3","4","5","6","Une infinité"], answer:it.a, shapeSvg: SYM_SVG[it.shape], name:it.name };
+  });
+  qs.push({ kind:"choice", prompt:"Cette figure a 4 côtés de la même longueur, mais ses angles ne sont pas forcément droits.", instruction:"Quelle est cette figure ?", options:["Un losange","Un rectangle","Un cercle"], answer:"Un losange" });
+  qs.push({ kind:"choice", prompt:"Cette figure a 4 angles droits, et ses côtés opposés sont égaux deux à deux.", instruction:"Quelle est cette figure ?", options:["Un losange","Un rectangle","Un triangle"], answer:"Un rectangle" });
+  return shuffle(qs).slice(0,8);
+}
+
+/* ---- Module 10 : conversions d'unités (longueur, masse, capacité) ---- */
+function buildM10(){
+  var items = [
+    { prompt:"3 km = _____ m", answer:"3000" },
+    { prompt:"5 m = _____ cm", answer:"500" },
+    { prompt:"4 000 m = _____ km", answer:"4" },
+    { prompt:"600 cm = _____ m", answer:"6" },
+    { prompt:"2 kg = _____ g", answer:"2000" },
+    { prompt:"7 000 g = _____ kg", answer:"7" },
+    { prompt:"3 L = _____ mL", answer:"3000" },
+    { prompt:"5 000 mL = _____ L", answer:"5" },
+    { prompt:"Une ficelle mesure 2 m. Léa en coupe 45 cm. Combien de centimètres reste-t-il ?", answer:"155" },
+    { prompt:"Un sac de riz pèse 3 kg. On utilise 800 g pour une recette. Combien de grammes reste-t-il ?", answer:"2200" },
+    { prompt:"8 km = _____ m", answer:"8000" },
+    { prompt:"2 m = _____ cm", answer:"200" },
+    { prompt:"9 000 g = _____ kg", answer:"9" },
+    { prompt:"4 L = _____ mL", answer:"4000" },
+    { prompt:"Un ruban mesure 5 m. On en utilise 3 m 20 cm. Combien de centimètres reste-t-il ?", answer:"180" }
+  ];
+  return shuffle(items).slice(0,10).map(function(it){
+    return { kind:"calc", prompt: it.prompt, instruction:"Écris juste le nombre", answer: it.answer };
+  });
+}
+
+/* ---- Module 11 : fraction d'une quantité ---- */
+function buildM11(){
+  var items = [
+    { prompt:"1/4 de 12", answer:"3" },
+    { prompt:"2/3 de 9", answer:"6" },
+    { prompt:"3/4 de 16", answer:"12" },
+    { prompt:"1/2 de 10", answer:"5" },
+    { prompt:"1/4 de 20", answer:"5" },
+    { prompt:"2/3 de 12", answer:"8" },
+    { prompt:"3/4 de 20", answer:"15" },
+    { prompt:"1/2 de 16", answer:"8" },
+    { prompt:"1/3 de 15", answer:"5" },
+    { prompt:"1/5 de 20", answer:"4" },
+    { prompt:"2/5 de 15", answer:"6" },
+    { prompt:"3/5 de 25", answer:"15" }
+  ];
+  return shuffle(items).slice(0,8).map(function(it){
+    return { kind:"calc", prompt: it.prompt, instruction:"Écris juste le nombre", answer: it.answer };
+  });
+}
+
+/* ---- Module 12 : Henri IV et les guerres de Religion (QCM, faits bien établis) ---- */
+function buildM12(){
+  var items = [
+    { prompt:"Henri IV était roi de quel royaume avant de devenir roi de France ?", options:["Le royaume de Navarre","Le royaume d'Angleterre","Le royaume d'Espagne"], answer:"Le royaume de Navarre" },
+    { prompt:"À quelle religion Henri IV a-t-il été élevé, avant de devenir catholique ?", options:["Protestante","Catholique","Orthodoxe"], answer:"Protestante" },
+    { prompt:"En quelle année Henri IV signe-t-il l'édit de Nantes ?", options:["1598","1572","1610"], answer:"1598" },
+    { prompt:"Que permettait l'édit de Nantes ?", options:["La liberté de culte pour les protestants","L'interdiction de la religion catholique","La fin de la monarchie"], answer:"La liberté de culte pour les protestants" },
+    { prompt:"Comment Henri IV est-il mort ?", options:["Assassiné par Ravaillac","De maladie","À la guerre"], answer:"Assassiné par Ravaillac" },
+    { prompt:"Les guerres de Religion opposaient principalement quels deux groupes ?", options:["Catholiques et protestants","Français et Anglais","Nobles et paysans"], answer:"Catholiques et protestants" },
+    { prompt:"Quelle phrase est traditionnellement attribuée à Henri IV à propos de sa conversion au catholicisme ?", options:["Paris vaut bien une messe","Après moi, le déluge","L'État, c'est moi"], answer:"Paris vaut bien une messe" },
+    { prompt:"Henri IV est resté connu sous le surnom de...", options:["Le bon roi Henri","Le Roi Soleil","Le roi fainéant"], answer:"Le bon roi Henri" },
+    { prompt:"À quelle famille (dynastie) Henri IV appartient-il ?", options:["Les Bourbons","Les Valois","Les Tudors"], answer:"Les Bourbons" },
+    { prompt:"Henri IV a succédé à quel roi ?", options:["Henri III","Louis XIV","François Ier"], answer:"Henri III" },
+    { prompt:"En quelle année a lieu le massacre de la Saint-Barthélemy ?", options:["1572","1598","1610"], answer:"1572" },
+    { prompt:"Combien de temps ont duré les guerres de Religion (1562-1598) ?", options:["Environ 36 ans","Environ 5 ans","Environ 100 ans"], answer:"Environ 36 ans" },
+    { prompt:"Qui a succédé à Henri IV après son assassinat en 1610 ?", options:["Louis XIII","Louis XIV","François II"], answer:"Louis XIII" }
+  ];
+  return shuffle(items).slice(0,10).map(function(it){
+    return { kind:"choice", prompt: it.prompt, instruction:"", options: it.options, answer: it.answer };
+  });
+}
+
+/* ---- Module 13 : poser une multiplication ou division (2 niveaux) ---- */
+function posedMultHtml(a,b){
+  return '<div class="posed-op"><div class="posed-mult"><div class="pline">'+a+'</div><div class="pline op-line">&times; '+b+'</div></div></div>';
+}
+function posedDivHtml(a,b){
+  return '<div class="posed-op"><div class="posed-div"><span class="dividende">'+a+'</span><span class="potence"><span class="diviseur">'+b+'</span></span></div></div>';
+}
+function buildM13(){
+  var items = [
+    { level:"Niveau 1 (nombres entiers)", op:"mult", a:"23", b:"4", answer:"92" },
+    { level:"Niveau 1 (nombres entiers)", op:"mult", a:"156", b:"3", answer:"468" },
+    { level:"Niveau 1 (nombres entiers)", op:"mult", a:"42", b:"6", answer:"252" },
+    { level:"Niveau 1 (nombres entiers)", op:"div", a:"84", b:"4", answer:"21" },
+    { level:"Niveau 1 (nombres entiers)", op:"div", a:"96", b:"3", answer:"32" },
+    { level:"Niveau 1 (nombres entiers)", op:"div", a:"144", b:"6", answer:"24" },
+    { level:"Niveau 2 (nombres décimaux)", op:"mult", a:"4,5", b:"3", answer:"13,5" },
+    { level:"Niveau 2 (nombres décimaux)", op:"mult", a:"6,3", b:"2", answer:"12,6" },
+    { level:"Niveau 2 (nombres décimaux)", op:"mult", a:"2,4", b:"5", answer:"12" },
+    { level:"Niveau 2 (nombres décimaux)", op:"div", a:"13,5", b:"3", answer:"4,5" },
+    { level:"Niveau 2 (nombres décimaux)", op:"div", a:"9,6", b:"2", answer:"4,8" },
+    { level:"Niveau 2 (nombres décimaux)", op:"div", a:"8,4", b:"4", answer:"2,1" },
+    { level:"Niveau 1 (nombres entiers)", op:"mult", a:"34", b:"5", answer:"170" },
+    { level:"Niveau 1 (nombres entiers)", op:"mult", a:"213", b:"4", answer:"852" },
+    { level:"Niveau 1 (nombres entiers)", op:"div", a:"72", b:"4", answer:"18" },
+    { level:"Niveau 1 (nombres entiers)", op:"div", a:"108", b:"9", answer:"12" },
+    { level:"Niveau 2 (nombres décimaux)", op:"mult", a:"3,6", b:"4", answer:"14,4" },
+    { level:"Niveau 2 (nombres décimaux)", op:"mult", a:"5,2", b:"3", answer:"15,6" },
+    { level:"Niveau 2 (nombres décimaux)", op:"div", a:"16,8", b:"4", answer:"4,2" },
+    { level:"Niveau 2 (nombres décimaux)", op:"div", a:"6,3", b:"3", answer:"2,1" }
+  ];
+  var pool = items.map(function(it){
+    var visual = it.op === "mult" ? posedMultHtml(it.a, it.b) : posedDivHtml(it.a, it.b);
+    var opWord = it.op === "mult" ? "Multiplication posée" : "Division posée";
+    return { kind:"calc", prompt: it.level+" — "+opWord, instruction:"Pose et calcule, puis écris le résultat", answer: it.answer, shapeSvg: visual };
+  });
+  return shuffle(pool).slice(0,8);
+}
+
+/* ---- Module 14 : tables de multiplication difficiles (6, 7, 8, 9) ---- */
+function buildM14(){
+  var items = [
+    {a:6,b:7,answer:"42"}, {a:6,b:8,answer:"48"}, {a:6,b:9,answer:"54"},
+    {a:7,b:8,answer:"56"}, {a:7,b:9,answer:"63"}, {a:8,b:9,answer:"72"},
+    {a:7,b:7,answer:"49"}, {a:8,b:8,answer:"64"}, {a:9,b:9,answer:"81"}, {a:6,b:6,answer:"36"},
+    {a:7,b:6,answer:"42"}, {a:8,b:6,answer:"48"}, {a:9,b:6,answer:"54"},
+    {a:8,b:7,answer:"56"}, {a:9,b:7,answer:"63"}, {a:9,b:8,answer:"72"}
+  ];
+  return shuffle(items).slice(0,10).map(function(it){
+    return { kind:"calc", prompt: it.a+" × "+it.b, instruction:"Écris juste le résultat", answer: it.answer };
+  });
+}
+
+var BUILDERS = { m1:buildM1, m2:buildM2, m3:buildM3, m4:buildM4, m5:buildM5, m6:buildM6, m7:buildM7, m8:buildM8, m9:buildM9, m10:buildM10, m11:buildM11, m12:buildM12, m13:buildM13, m14:buildM14 };
+
+/* =========================================================
+   ÉTAT / PERSISTANCE
+   ========================================================= */
+var STORAGE_KEY = "shamsProgress_v1";
+
+function defaultState(){
+  var modules = {};
+  MODULES.forEach(function(m){
+    modules[m.id] = { history:[], totalPoints:0, lastPlayed:null, timesPlayed:0 };
+  });
+  return {
+    modules: modules,
+    streakDays: 0,
+    lastPlayedDate: null,
+    totalPoints: 0,
+    soundEnabled: true,
+    badgesUnlocked: []
+  };
+}
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    var parsed = JSON.parse(raw);
+    var def = defaultState();
+    parsed.modules = parsed.modules || {};
+    MODULES.forEach(function(m){
+      if(!parsed.modules[m.id]) parsed.modules[m.id] = def.modules[m.id];
+    });
+    if(typeof parsed.streakDays !== "number") parsed.streakDays = 0;
+    if(typeof parsed.totalPoints !== "number") parsed.totalPoints = 0;
+    if(typeof parsed.soundEnabled !== "boolean") parsed.soundEnabled = true;
+    if(!Array.isArray(parsed.badgesUnlocked)) parsed.badgesUnlocked = [];
+    return parsed;
+  }catch(e){
+    return defaultState();
+  }
+}
+
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e){ /* stockage indisponible (ex : fichier ouvert directement dans Safari) : on continue sans bloquer la séance */ }
+}
+
+var state = loadState();
+
+var BADGES = [
+  {threshold:50, name:"Étoile filante", emoji:"🌠"},
+  {threshold:150, name:"Sérieux comme un chef", emoji:"👑"},
+  {threshold:300, name:"Champion en herbe", emoji:"🏆"},
+  {threshold:600, name:"Maître Shams", emoji:"🥇"}
+];
+
+function moduleAvg(modState){
+  if(!modState.history.length) return null;
+  var sum = modState.history.reduce(function(a,b){return a+b;},0);
+  return sum / modState.history.length;
+}
+
+function moduleLevel(modState){
+  var avg = moduleAvg(modState);
+  if(avg === null) return "nouveau";
+  if(avg < 0.5) return "fragile";
+  if(avg < 0.8) return "presque";
+  return "acquis";
+}
+
+var LEVEL_LABEL = { nouveau:"À découvrir", fragile:"Fragile", presque:"Presque !", acquis:"Acquis" };
+
+function pickDailyChallenge(){
+  var best = null, bestScore = 2;
+  MODULES.forEach(function(m){
+    var avg = moduleAvg(state.modules[m.id]);
+    var score = (avg === null) ? -1 : avg;
+    if(score < bestScore){ bestScore = score; best = m; }
+  });
+  return best || MODULES[0];
+}
+
+function todayISO(){
+  var d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function daysBetween(iso1, iso2){
+  var d1 = new Date(iso1+"T00:00:00");
+  var d2 = new Date(iso2+"T00:00:00");
+  return Math.round((d2-d1)/86400000);
+}
+
+function registerSessionCompletion(moduleId, scoreFraction){
+  var ms = state.modules[moduleId];
+  ms.history.push(scoreFraction);
+  if(ms.history.length > 5) ms.history.shift();
+  ms.timesPlayed += 1;
+  ms.lastPlayed = todayISO();
+
+  var today = todayISO();
+  if(state.lastPlayedDate === null){
+    state.streakDays = 1;
+  } else if(state.lastPlayedDate !== today){
+    var diff = daysBetween(state.lastPlayedDate, today);
+    if(diff === 1) state.streakDays += 1;
+    else if(diff > 1) state.streakDays = 1;
+  }
+  state.lastPlayedDate = today;
+  saveState();
+}
+
+function addPoints(n){
+  state.totalPoints += n;
+  saveState();
+}
+
+function checkNewBadges(){
+  var newly = [];
+  BADGES.forEach(function(b){
+    if(state.totalPoints >= b.threshold && state.badgesUnlocked.indexOf(b.name) === -1){
+      state.badgesUnlocked.push(b.name);
+      newly.push(b);
+    }
+  });
+  if(newly.length) saveState();
+  return newly;
+}
+
+/* =========================================================
+   AUDIO — bip de réussite (Web Audio API)
+   ========================================================= */
+var audioCtx = null;
+function playSuccessBeep(){
+  if(!state.soundEnabled) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var o = audioCtx.createOscillator();
+    var g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + 0.36);
+  }catch(e){ /* audio non disponible, on ignore */ }
+}
+
+/* =========================================================
+   CONFETTIS (CSS légers)
+   ========================================================= */
+var CONFETTI_COLORS = ["#3d5cff","#ff9f43","#2fb380","#ffd166","#8a90ff"];
+function launchConfetti(big){
+  var layer = document.getElementById("confetti-layer");
+  var count = big ? 34 : 16;
+  for(var i=0;i<count;i++){
+    var el = document.createElement("div");
+    el.className = "confetti-piece";
+    el.style.left = (Math.random()*100)+"vw";
+    el.style.background = CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)];
+    el.style.animationDuration = (1.6 + Math.random()*1.2)+"s";
+    el.style.transform = "rotate("+Math.floor(Math.random()*360)+"deg)";
+    layer.appendChild(el);
+    (function(node){
+      setTimeout(function(){ node.remove(); }, 3000);
+    })(el);
+  }
+}
+
+/* =========================================================
+   NORMALISATION DES RÉPONSES
+   ========================================================= */
+function stripAccents(s){
+  return s.normalize("NFD").replace(/[̀-ͯ]/g,"");
+}
+function normText(s){
+  return stripAccents(String(s||"")).toLowerCase().trim().replace(/\s+/g," ").replace(/[!.,;]/g,"");
+}
+function normCalc(s){
+  return String(s||"").toLowerCase().replace(/\s+/g,"").replace(/²/g,"2").replace(/,/g,".");
+}
+function normNumber(s){
+  return String(s||"").replace(/[^\d\-]/g,"");
+}
+
+/* =========================================================
+   ROUTAGE / RENDU
+   ========================================================= */
+var view = "home";
+var quiz = null; /* état de la séance en cours */
+var app = document.getElementById("app");
+
+function go(v){
+  view = v;
+  render();
+  var main = app.querySelector("h1, h2, .prompt");
+  if(main) main.focus && main.focus();
+  window.scrollTo(0,0);
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];
+  });
+}
+
+function topnavHtml(){
+  return '<div class="topnav">'+
+    '<div class="brand">✨ Les défis de Shams</div>'+
+    '<div class="navbtns">'+
+      '<button data-action="nav" data-view="home" aria-current="'+(view==="home")+'">Accueil</button>'+
+      '<button data-action="nav" data-view="progress" aria-current="'+(view==="progress")+'">Suivi</button>'+
+      '<button data-action="nav" data-view="settings" aria-current="'+(view==="settings")+'">Réglages</button>'+
+    '</div></div>';
+}
+
+function render(){
+  var html = topnavHtml();
+  if(view === "home") html += renderHome();
+  else if(view === "intro") html += renderIntro();
+  else if(view === "quiz") html += renderQuiz();
+  else if(view === "result") html += renderResult();
+  else if(view === "progress") html += renderProgress();
+  else if(view === "settings") html += renderSettings();
+  app.innerHTML = html;
+  wireEvents();
+}
+
+/* ---------- HOME ---------- */
+function renderHome(){
+  var daily = pickDailyChallenge();
+  var h = '<div class="card">'+
+    '<div class="hello">Salut Shams ! 👋</div>'+
+    '<div class="hello-sub">Choisis un module, ou fonce sur le défi du jour. 15 minutes suffisent !</div>'+
+  '</div>';
+
+  h += '<div class="card challenge-card">'+
+    '<div class="challenge-title">🎯 Défi du jour</div>'+
+    '<div class="challenge-mod">'+daily.emoji+' '+esc(daily.title)+'</div>'+
+    '<button class="btn btn-primary" data-action="start-module" data-id="'+daily.id+'">Commencer le défi du jour</button>'+
+  '</div>';
+
+  h += '<h2>Tous les modules</h2><div class="grid">';
+  MODULES.forEach(function(m){
+    var lvl = moduleLevel(state.modules[m.id]);
+    h += '<button class="mod-card" data-action="open-module" data-id="'+m.id+'">'+
+      '<div class="mod-emoji">'+m.emoji+'</div>'+
+      '<div class="mod-title">'+esc(m.title)+'</div>'+
+      '<span class="pastille '+lvl+'">'+LEVEL_LABEL[lvl]+'</span>'+
+    '</button>';
+  });
+  h += '</div>';
+  return h;
+}
+
+/* ---------- INTRO MODULE ---------- */
+var currentModuleId = null;
+function renderIntro(){
+  var m = MODULES.find(function(x){return x.id===currentModuleId;});
+  return '<div class="card">'+
+    '<h1 tabindex="-1">'+m.emoji+' '+esc(m.title)+'</h1>'+
+    '<h2 style="font-size:17px;color:var(--ink-soft);margin-top:-4px;">'+esc(m.ruleTitle)+'</h2>'+
+    '<div class="rule-box">'+m.ruleHtml+'</div>'+
+    '<div class="btn-row">'+
+      '<button class="btn btn-primary" data-action="begin-quiz" data-id="'+m.id+'">Commencer la séance</button>'+
+      '<button class="btn btn-ghost" data-action="nav" data-view="home">Retour à l\'accueil</button>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ---------- QUIZ ---------- */
+function renderQuiz(){
+  var q = quiz.questions[quiz.index];
+  var m = MODULES.find(function(x){return x.id===quiz.moduleId;});
+  var pct = Math.round((quiz.index)/quiz.questions.length*100);
+  var reviewed = quiz.answered[quiz.index];
+  var h = '<div class="card">'+
+    '<div class="qcounter">'+m.emoji+' '+esc(m.title)+' — Question '+(quiz.index+1)+' / '+quiz.questions.length+'</div>'+
+    '<div class="progressbar-track"><div class="progressbar-fill" style="width:'+pct+'%"></div></div>';
+
+  if(quiz.index > 0){
+    h += '<div class="btn-row" style="margin-top:0;margin-bottom:6px;"><button type="button" class="btn btn-ghost" data-action="prev-question">← Précédent</button></div>';
+  }
+
+  if(q.shapeSvg) h += '<div class="solid-fig">'+q.shapeSvg+'</div>';
+  h += '<div class="prompt" tabindex="-1">'+esc(q.prompt)+'</div>';
+  if(q.instruction) h += '<div class="sub-prompt">'+esc(q.instruction)+'</div>';
+
+  if(reviewed){
+    h += '<div class="feedback show '+reviewed.cls+'">'+reviewed.html+'</div>';
+    h += '<div class="btn-row"><button class="btn btn-primary" data-action="next-question">Suivant</button></div>';
+    h += '</div>';
+    return h;
+  }
+
+  h += '<form id="quiz-form" autocomplete="off">';
+
+  if(q.kind === "text"){
+    h += '<input class="answer-input" type="text" id="ans" aria-label="Ta réponse">';
+  } else if(q.kind === "text2"){
+    h += '<div class="two-inputs">'+
+      '<div><label for="ans1">'+esc(q.labels[0])+'</label><input class="answer-input" type="text" id="ans1"></div>'+
+      '<div><label for="ans2">'+esc(q.labels[1])+'</label><input class="answer-input" type="text" id="ans2"></div>'+
+    '</div>';
+  } else if(q.kind === "frame2"){
+    h += '<div class="frame-row">'+
+      '<input class="answer-input" type="text" inputmode="numeric" id="ans1" aria-label="Borne inférieure" style="width:120px">'+
+      '<span>&lt;</span><span>'+esc(q.prompt)+'</span><span>&lt;</span>'+
+      '<input class="answer-input" type="text" inputmode="numeric" id="ans2" aria-label="Borne supérieure" style="width:120px">'+
+    '</div>';
+  } else if(q.kind === "calc"){
+    h += '<input class="answer-input" type="text" id="ans" aria-label="Ta réponse">';
+  } else if(q.kind === "choice"){
+    h += '<div class="choices" role="group" aria-label="Choix de réponse">';
+    q.options.forEach(function(opt,i){
+      h += '<button type="button" class="choice-btn" data-action="pick-choice" data-value="'+esc(opt)+'" aria-pressed="false">'+esc(opt)+'</button>';
+    });
+    h += '</div><input type="hidden" id="ans">';
+  } else if(q.kind === "rank"){
+    h += '<div class="rank-selected" id="rank-selected" aria-live="polite"></div>';
+    h += '<div class="rank-pool" id="rank-pool">';
+    q.options.forEach(function(opt){
+      h += '<button type="button" class="rank-chip" data-action="pick-rank" data-value="'+esc(opt)+'">'+esc(opt)+'</button>';
+    });
+    h += '</div>';
+  }
+
+  var showValidate = (q.kind === "text" || q.kind === "text2" || q.kind === "frame2" || q.kind === "calc");
+  h += '<div class="btn-row">';
+  if(showValidate){
+    h += '<button type="submit" class="btn btn-primary" id="validate-btn">Valider</button>';
+  }
+  h += '</div></form>';
+
+  h += '<div class="feedback" id="feedback" aria-live="polite"></div>';
+  h += '<div class="btn-row" id="next-row" style="display:none;">'+
+    '<button class="btn btn-primary" data-action="next-question">Suivant</button>'+
+  '</div>';
+  h += '</div>';
+  return h;
+}
+
+function checkAnswer(q, userVals){
+  if(q.kind === "text"){
+    var okLoose = normText(userVals[0]) === normText(q.answer);
+    var okStrict = userVals[0].trim() === q.answer;
+    return { correct: okLoose, tip: (okLoose && !okStrict && q.accentTip) ? q.accentTip : null };
+  }
+  if(q.kind === "text2"){
+    var ok1 = normText(userVals[0]) === normText(q.answer[0]);
+    var ok2 = normText(userVals[1]) === normText(q.answer[1]);
+    return { correct: ok1 && ok2 };
+  }
+  if(q.kind === "frame2"){
+    var n1 = parseInt(normNumber(userVals[0]),10);
+    var n2 = parseInt(normNumber(userVals[1]),10);
+    return { correct: n1 === q.answer[0] && n2 === q.answer[1] };
+  }
+  if(q.kind === "calc"){
+    return { correct: normCalc(userVals[0]) === normCalc(q.answer) };
+  }
+  if(q.kind === "choice"){
+    return { correct: userVals[0] === q.answer };
+  }
+  if(q.kind === "rank"){
+    var sel = quiz.rankSelection || [];
+    if(sel.length !== q.answer.length) return { correct:false };
+    for(var i=0;i<sel.length;i++){ if(sel[i] !== q.answer[i]) return { correct:false }; }
+    return { correct:true };
+  }
+  return { correct:false };
+}
+
+function formatAnswerForDisplay(q){
+  if(q.kind === "text") return q.answer;
+  if(q.kind === "text2") return q.labels[0]+" "+q.answer[0] + " / " + q.labels[1]+" "+q.answer[1];
+  if(q.kind === "frame2") return q.answer[0] + " < ... < " + q.answer[1];
+  if(q.kind === "calc") return q.answer.replace(/2$/,"²").replace(/(\d+)(hm|mm|cm|m|km)/,"$1 $2");
+  if(q.kind === "choice") return (q.name ? q.name.charAt(0).toUpperCase()+q.name.slice(1)+" : " : "") + q.answer;
+  if(q.kind === "rank") return q.answer.join(" < ");
+  return "";
+}
+
+function submitCurrentAnswer(){
+  var q = quiz.questions[quiz.index];
+  var vals = [];
+  if(q.kind === "text" || q.kind === "calc"){
+    vals = [document.getElementById("ans").value];
+  } else if(q.kind === "text2"){
+    vals = [document.getElementById("ans1").value, document.getElementById("ans2").value];
+  } else if(q.kind === "frame2"){
+    vals = [document.getElementById("ans1").value, document.getElementById("ans2").value];
+  } else if(q.kind === "choice"){
+    vals = [document.getElementById("ans").value];
+    if(!vals[0]){
+      showFeedbackTransient("Choisis une réponse avant de valider !");
+      return;
+    }
+  }
+  handleResult(q, checkAnswer(q, vals));
+}
+
+function showFeedbackTransient(msg){
+  var fb = document.getElementById("feedback");
+  fb.className = "feedback show retry";
+  fb.textContent = msg;
+}
+
+function handleResult(q, result){
+  quiz.attempts = (quiz.attempts||0) + 1;
+  var fb = document.getElementById("feedback");
+  var nextRow = document.getElementById("next-row");
+  var form = document.getElementById("quiz-form");
+
+  if(result.correct){
+    finalizeQuestion(true);
+    fb.className = "feedback show ok";
+    fb.innerHTML = "Bravo, c'est exact ! 🎉" + (result.tip ? '<div class="tip">'+esc(result.tip)+'</div>' : "");
+    playSuccessBeep();
+    disableForm(form);
+    nextRow.style.display = "flex";
+    quiz.answered[quiz.index] = { cls:"ok", html: fb.innerHTML };
+  } else if(quiz.attempts < 2){
+    fb.className = "feedback show retry";
+    fb.textContent = "Presque ! Regarde bien et réessaie 💪";
+  } else {
+    finalizeQuestion(false);
+    fb.className = "feedback show reveal";
+    var extra = "";
+    if(q.solid){
+      extra = '<button type="button" class="euler-btn" data-action="euler" data-faces="'+q.solid.faces+'" data-sommets="'+q.solid.sommets+'" data-aretes="'+q.solid.aretes+'" data-name="'+esc(q.solid.name)+'">🔎 Vérifier avec la formule secrète</button><div class="euler-info" id="euler-info" style="display:none;"></div>';
+    }
+    fb.innerHTML = "Pas grave, on retient : <b>"+esc(formatAnswerForDisplay(q))+"</b>. On continue !"+extra;
+    disableForm(form);
+    nextRow.style.display = "flex";
+    quiz.answered[quiz.index] = { cls:"reveal", html: fb.innerHTML };
+  }
+}
+
+function disableForm(form){
+  if(!form) return;
+  var els = form.querySelectorAll("input, button");
+  els.forEach(function(el){ el.disabled = true; });
+  var choiceBtns = document.querySelectorAll(".choice-btn, .rank-chip");
+  choiceBtns.forEach(function(el){ el.disabled = true; });
+}
+
+function finalizeQuestion(correct){
+  if(correct){
+    quiz.streak = (quiz.streak||0) + 1;
+    quiz.correctCount = (quiz.correctCount||0) + 1;
+    quiz.pointsEarned = (quiz.pointsEarned||0) + 10;
+    if(quiz.streak % 2 === 0){
+      quiz.pointsEarned += 5;
+      quiz.starsEarned = (quiz.starsEarned||0) + 1;
+    }
+  } else {
+    quiz.streak = 0;
+  }
+}
+
+/* ---------- RESULT ---------- */
+function renderResult(){
+  var m = MODULES.find(function(x){return x.id===quiz.moduleId;});
+  var total = quiz.questions.length;
+  var correct = quiz.correctCount || 0;
+  var fraction = correct/total;
+  var newBadges = quiz.newBadges || [];
+  var h = '<div class="card">'+
+    '<h1 tabindex="-1">'+m.emoji+' Séance terminée !</h1>'+
+    '<div class="result-score">'+correct+' / '+total+'</div>'+
+    '<div class="result-stars">'+ "⭐".repeat(quiz.starsEarned||0) +'</div>'+
+    '<div class="result-line">+'+(quiz.pointsEarned||0)+' points gagnés — total : '+state.totalPoints+' points</div>';
+
+  if(newBadges.length){
+    newBadges.forEach(function(b){
+      h += '<div class="badge-banner">Nouveau badge débloqué : '+b.emoji+' '+esc(b.name)+' !</div>';
+    });
+  }
+
+  h += '<div class="btn-row">'+
+    '<button class="btn btn-primary" data-action="start-module" data-id="'+m.id+'">Rejouer ce module</button>'+
+    '<button class="btn btn-ghost" data-action="nav" data-view="home">Retour à l\'accueil</button>'+
+  '</div></div>';
+  return h;
+}
+
+/* ---------- PROGRESS ---------- */
+function renderProgress(){
+  var h = '<div class="streak-banner">🔥 '+state.streakDays+' jour'+(state.streakDays>1?'s':'')+' d\'affilée</div>';
+  h += '<div class="card"><h1 tabindex="-1">Mon suivi</h1>';
+  h += '<table class="suivi"><thead><tr><th>Module</th><th>Progression</th><th>Niveau</th><th>Dernier score</th></tr></thead><tbody>';
+  MODULES.forEach(function(m){
+    var ms = state.modules[m.id];
+    var avg = moduleAvg(ms);
+    var lvl = moduleLevel(ms);
+    var pct = avg === null ? 0 : Math.round(avg*100);
+    var lastScore = ms.history.length ? Math.round(ms.history[ms.history.length-1]*100)+"%" : "—";
+    h += '<tr><td>'+m.emoji+' '+esc(m.title)+'</td>'+
+      '<td><div class="mini-bar-track"><div class="mini-bar-fill" style="width:'+pct+'%"></div></div></td>'+
+      '<td><span class="pastille '+lvl+'">'+LEVEL_LABEL[lvl]+'</span></td>'+
+      '<td>'+lastScore+'</td></tr>';
+  });
+  h += '</tbody></table>';
+  h += '<div class="result-line" style="margin-top:14px;">Total de points : '+state.totalPoints+'</div>';
+  if(state.badgesUnlocked.length){
+    h += '<div class="result-line">Badges : '+state.badgesUnlocked.map(function(n){
+      var b = BADGES.find(function(x){return x.name===n;});
+      return b ? b.emoji+" "+esc(b.name) : esc(n);
+    }).join(" · ")+'</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+/* ---------- SETTINGS ---------- */
+function renderSettings(){
+  return '<div class="card"><h1 tabindex="-1">Réglages</h1>'+
+    '<div class="toggle-row">'+
+      '<label for="sound-toggle" style="font-weight:700;">Son (bip de réussite)</label>'+
+      '<span class="switch"><input type="checkbox" id="sound-toggle" '+(state.soundEnabled?'checked':'')+'><span class="track"></span><span class="thumb"></span></span>'+
+    '</div>'+
+    '<hr style="border:none;border-top:1px solid #eef0f8;margin:14px 0;">'+
+    '<p style="color:var(--ink-soft);">Réinitialiser efface tous les scores, séries et badges enregistrés sur cet appareil.</p>'+
+    '<button class="btn btn-danger" data-action="reset-progress">Réinitialiser ma progression</button>'+
+  '</div>';
+}
+
+/* =========================================================
+   ÉVÉNEMENTS
+   ========================================================= */
+function wireEvents(){
+  app.onclick = function(e){
+    var btn = e.target.closest("[data-action]");
+    if(!btn) return;
+    var action = btn.getAttribute("data-action");
+
+    if(action === "nav"){
+      go(btn.getAttribute("data-view"));
+    } else if(action === "open-module"){
+      currentModuleId = btn.getAttribute("data-id");
+      go("intro");
+    } else if(action === "start-module"){
+      currentModuleId = btn.getAttribute("data-id");
+      startQuiz(currentModuleId);
+    } else if(action === "begin-quiz"){
+      startQuiz(btn.getAttribute("data-id"));
+    } else if(action === "pick-choice"){
+      document.getElementById("ans").value = btn.getAttribute("data-value");
+      document.querySelectorAll(".choice-btn").forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+      btn.setAttribute("aria-pressed","true");
+      submitCurrentAnswer();
+    } else if(action === "pick-rank"){
+      quiz.rankSelection = quiz.rankSelection || [];
+      if(quiz.rankSelection.indexOf(btn.getAttribute("data-value")) !== -1) return;
+      quiz.rankSelection.push(btn.getAttribute("data-value"));
+      btn.disabled = true;
+      updateRankSelectedUI();
+      var q = quiz.questions[quiz.index];
+      if(quiz.rankSelection.length === q.answer.length){
+        submitCurrentAnswer();
+      }
+    } else if(action === "next-question"){
+      advanceQuestion();
+    } else if(action === "prev-question"){
+      if(quiz.index > 0) goToQuestion(quiz.index - 1);
+    } else if(action === "euler"){
+      var info = document.getElementById("euler-info");
+      var f = parseInt(btn.getAttribute("data-faces"),10);
+      var s = parseInt(btn.getAttribute("data-sommets"),10);
+      var a = parseInt(btn.getAttribute("data-aretes"),10);
+      var name = btn.getAttribute("data-name");
+      info.style.display = "block";
+      info.innerHTML = "Pour "+esc(name)+" : "+s+" sommets + "+f+" faces = "+(s+f)+", et "+a+" arêtes + 2 = "+(a+2)+". Ça correspond ! ✅";
+    } else if(action === "reset-progress"){
+      if(window.confirm("Es-tu sûr de vouloir tout réinitialiser ? Cette action efface les scores, séries et badges.")){
+        try{ localStorage.removeItem(STORAGE_KEY); }catch(e){ /* stockage indisponible, on repart quand même sur un état neuf */ }
+        state = defaultState();
+        go("home");
+      }
+    }
+  };
+
+  var form = document.getElementById("quiz-form");
+  if(form){
+    form.onsubmit = function(e){
+      e.preventDefault();
+      submitCurrentAnswer();
+    };
+  }
+
+  var soundToggle = document.getElementById("sound-toggle");
+  if(soundToggle){
+    soundToggle.onchange = function(){
+      state.soundEnabled = soundToggle.checked;
+      saveState();
+    };
+  }
+
+  if(view === "quiz"){
+    var firstInput = app.querySelector(".answer-input, .choice-btn, .rank-chip");
+    if(firstInput) firstInput.focus();
+    updateRankSelectedUI();
+  }
+}
+
+function updateRankSelectedUI(){
+  var container = document.getElementById("rank-selected");
+  if(!container) return;
+  var sel = quiz.rankSelection || [];
+  container.innerHTML = sel.length ? sel.map(function(v){ return "<span>"+esc(v)+"</span>"; }).join("") : '<span style="background:transparent;color:var(--ink-soft);font-weight:500;">Clique les nombres ci-dessous, du plus petit au plus grand</span>';
+}
+
+function startQuiz(moduleId){
+  currentModuleId = moduleId;
+  quiz = {
+    moduleId: moduleId,
+    questions: BUILDERS[moduleId](),
+    index: 0,
+    attempts: 0,
+    correctCount: 0,
+    streak: 0,
+    pointsEarned: 0,
+    starsEarned: 0,
+    rankSelection: [],
+    answered: []
+  };
+  go("quiz");
+}
+
+function goToQuestion(index){
+  quiz.index = index;
+  quiz.attempts = 0;
+  quiz.rankSelection = [];
+  render();
+  if(view === "quiz"){
+    var firstInput = app.querySelector(".answer-input, .choice-btn, .rank-chip, [data-action='next-question']");
+    if(firstInput) firstInput.focus();
+  }
+}
+
+function advanceQuestion(){
+  if(quiz.index >= quiz.questions.length - 1){
+    finishQuiz();
+  } else {
+    goToQuestion(quiz.index + 1);
+  }
+}
+
+function finishQuiz(){
+  var fraction = quiz.correctCount / quiz.questions.length;
+  try{
+    registerSessionCompletion(quiz.moduleId, fraction);
+    addPoints(quiz.pointsEarned);
+    quiz.newBadges = checkNewBadges();
+  }catch(e){
+    quiz.newBadges = quiz.newBadges || [];
+  }
+  go("result");
+  launchConfetti(fraction >= 0.8);
+}
+
+/* =========================================================
+   DÉMARRAGE
+   ========================================================= */
+render();
+
+})();
+</script>
+</body>
+</html>
